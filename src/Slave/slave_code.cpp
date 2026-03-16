@@ -4,7 +4,7 @@
 #include <SoftwareSerial.h>
 
 // diese Struktur represantiert Lokal die Einheit
-struct CellData own_cell;
+struct SingleUnitData own_cell;
 
 // hier werden die Pins zur Kommunikation definiert
 SoftwareSerial SerialDown(10, 11); // fuer die Kommunikation die Richtung Slaves geht
@@ -54,7 +54,6 @@ void handleScanPacket(Packet &p) {
     p.data[myPos].voltage_Cell2 = own_cell.voltage_Cell2;
     p.data[myPos].voltage_mV = own_cell.voltage_mV;
     p.data[myPos].temperature_C = own_cell.temperature_C;
-    p.data[myPos].isConnected = true;
 
     // Den Zähler für den nächsten Nachbarn erhöhen
     p.activeUnits++;
@@ -83,13 +82,7 @@ void recv_data_from_serialdown() {
                 // Wir warten, bis der REST (sizeof(ScanPacket) - 2) da ist
                 while(SerialDown.available() < (sizeof(ScanPacket) - 2));
 
-                struct measure_Cell_Data cell;
-                cell = read_Data_for_own_unit();
-
-                own_cell.voltage_mV = cell.voltage_mV;
-                own_cell.voltage_Cell1 = cell.voltage_Cell1;
-                own_cell.voltage_Cell2 = cell.voltage_Cell2;
-                own_cell.temperature = cell.temperature_C;
+                read_Data_for_own_unit(own_cell);
                 
                 struct ScanPacket sp;
                 sp.startByte = start;
@@ -135,13 +128,22 @@ void recv_data_from_serialdown() {
 void setup() {
     SerialUp.begin(9600);
     SerialDown.begin(9600);
-
-    own_cell.is_balancing_1 = false;
-    own_cell.is_balancing_2 = false;
-
 }
+
+unsigned long lastTimeBalancing = 0; // Speichert den Zeitpunkt der letzten Ausführung
+const unsigned long intervallBalancing = 60000; // 60.000 Millisekunden = 1 Minute
 
 void loop() {
     recv_data_from_serialdown();
+
+    unsigned long currentTimeBalancing = millis(); // Aktuelle Zeit abfragen
+
+    // Prüfen, ob die Differenz größer als das Intervall ist
+    if (currentTimeBalancing - lastTimeBalancing >= intervallBalancing) {
+        lastTimeBalancing = currentTimeBalancing; // Zeitstempel aktualisieren
+
+        balancing();
+    }
+    
 
 }

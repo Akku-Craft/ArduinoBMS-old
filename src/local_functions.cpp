@@ -5,9 +5,7 @@
 #include <Arduino.h>
 #include "BMS_Definitions.h"
 
-measure_Cell_Data read_Data_for_own_unit() {
-
-  struct measure_Cell_Data cell;
+void read_Data_for_own_unit(SingleUnitData &unit) {
   
   // 1. MESSUNG (Durchschnitt aus 20 Werten für Stabilität)
   float rawA1 = 0;
@@ -30,66 +28,121 @@ measure_Cell_Data read_Data_for_own_unit() {
   // Zelle 2 berechnen (Differenz)
   float vZelle2 = vGesamt - vZelle1;
 
-  cell.voltage_mV = vGesamt;
-  cell.voltage_Cell1 = vZelle1;
-  cell.voltage_Cell2 = vZelle2;
+  unit.vCell1_mV = vZelle1;
+  unit.vCell2_mV = vZelle2;
+  unit.voltage_mV = vGesamt;
 
-  cell.temperature_C = 25;
 
-  return cell;
-
-}
-
-// diese Funktion liest alle Regestrierten Zellen aus und legt fest was zu tun ist
-// die ergebnisse werden dan an die jeweilige Einheit gesendet wo auch die umsetzung erfolgt
-void update_System_Behavior_for_first_Unit() {
-    
-  // ueberpruefen ob balancing notwendig ist 
-  // differenz beider Akkuzellen
-  float diff = Units[i].voltage_Cell1 - Units[i].voltage_Cell2;
+  // Messung der Temperatur
+  // 1. Rohwert einlesen (0 bis 1023)
+  int rawValue = analogRead(tempPin);
   
-  // Frage 1: Ist Zelle 1 viel voller als Zelle 2?
-  if (diff > diffStart) { 
-    Units[i].is_balancing_Z1 = true;  // Merken: Z1 entladen
-    Units[i].is_balancing_Z2 = false; // Z2 muss nichts tun
-  } 
-  // Frage 2: Ist Zelle 2 viel voller als Zelle 1?
-  else if (diff < -diffStart) { 
-    Units[i].is_balancing_Z1 = false; 
-    Units[i].is_balancing_Z2 = true;  // Merken: Z2 entladen
-  } 
-  // Frage 3: Sind sie nah genug beieinander?
-  else if (abs(diff) < diffStop) { 
-    Units[i].is_balancing_Z1 = false;
-    Units[i].is_balancing_Z2 = false;
-  }
+  // 2. Spannung berechnen (bei 5V Referenz)
+  float voltage = rawValue * (5.0 / 1023.0);
+  
+  // 3. Temperatur in Kelvin (10mV = 1K -> Spannung * 100)
+  float temperatureKelvin = voltage * 100.0;
+  
+  // 4. Umrechnung in Celsius
+  float temperatureCelsius = temperatureKelvin - 273.15;
 
+  unit.temp_C = temperatureCelsius;
 }
 
+// diese Funktion Balanced
+void balancing(struct CellData own_cell) {
+  // Nummer der Zelle mit der kleineren Spannung
+  int lower_cell;
 
-void run_local_balancing(CellData &data, float targetVoltage) {
-  // Hysterese-Wert (verhindert Flattern der MOSFETs bei exakt 3.6V)
-  const float HYSTERESIS = 0.05; 
+  // Spannung der niedrigeren Zelle
+  float start_voltage;
 
-  // --- Zelle 1 Check ---
-  if (data.voltage_Cell1 > targetVoltage) {
-    digitalWrite(PIN_MOSFET_Z1, HIGH);
-    data.is_balancing_Z1 = true;
+  float new_voltage;
+
+  // gewuenschte Spannung
+  float desired_voltage;
+
+
+  // Abfrage ob Zelle 1 zu wenug Spannung hat
+  if (own_cell.voltage_Cell1 < own_cell.voltage_Cell2 && abs(own_cell.voltage_Cell1 - own_cell.voltage_Cell2) > 0.2) {
+    lower_cell = 1;
+    desired_voltage = own_cell.voltage_Cell1;
+    start_voltage = own_cell.voltage_Cell2;
+
+    // initialisierung des Potensiometers
+    digitalWrite(pinINC_2, LOW);
   } 
-  else if (data.voltage_Cell1 < (targetVoltage - HYSTERESIS)) {
-    digitalWrite(PIN_MOSFET_Z1, LOW);
-    data.is_balancing_Z1 = false;
+
+
+  // Abfrage ob Zelle 2 zu wenig Spannung hat
+  if (own_cell.voltage_Cell1 > own_cell.voltage_Cell2 && abs(own_cell.voltage_Cell1 - own_cell.voltage_Cell2) > 0.2) {
+    lower_cell = 2;
+    desired_voltage = own_cell.voltage_Cell2;
+    start_voltage = own_cell.voltage_Cell1;
+
+    // initialisierung des Potensiometers
+    digitalWrite(pinINC_1, LOW);
+  } 
+
+  
+  // schaltung des DC DC Wandlers wenn Zelle 1 zu wenig spannung hat
+  if (lower_cell = 1) {
+
+    // standart maessig wird die richtung auf Low gesetzt
+    digitalWrite(pinUD_2, LOW);
+
+    while (abs(desired_voltage - new_voltage) > 0.1) {
+
+      // hier wird geguckt in welche Richtung das Poti arbeiten muss
+      if (new_voltage > start_voltage) {
+        digitalWrite(pinUD_2, HIGH);
+      }
+
+      // bewegung des Potis um einen Schritt
+      digitalWrite(pinINC_2, LOW);
+      delayMicroseconds(10);
+
+      // erneute Messung
+      read_Data_for_own_unit(&own_cell);
+
+      // startvoltage wird die Spannung vor der Veraenderung zugewoesen
+      start_voltage = new_voltage;
+      // new voltage wird der veraenderten spannung zugewiesen
+      new_voltage = own_cell.voltage_Cell2;
+    }
+
+    digitalWrite(pinCS_2, HIGH);
+  } 
+  
+  if (lower_cell = 2) {
+
+    // standart maessig wird die Richtung auf Low gesetzt
+    digitalWrite(pinUD_1, LOW);
+
+    while (abs(desired_voltage - new_voltage) > 0.2) {
+
+      // hier wird geguckt in welche Richtung das Poti arbeiten muss
+      if (new_voltage > start_voltage) {
+        digitalWrite(pinUD_1, HIGH);
+      }
+
+      // bewegung des Potis um einen Schritt
+      digitalWrite(pinINC_1, LOW);
+
+      read_Data_for_own_unit(&own_cell);
+
+      start_voltage = new_voltage;
+      new_voltage = own_cell.voltage_Cell2;
+
+    }
+
+    digitalWrite(pinCS_1, HIGH);
   }
 
-  // --- Zelle 2 Check ---
-  if (data.voltage_Cell2 > targetVoltage) {
-    digitalWrite(PIN_MOSFET_Z2, HIGH);
-    data.is_balancing_Z2 = true;
-  } 
-  else if (data.voltage_Cell2 < (targetVoltage - HYSTERESIS)) {
-    digitalWrite(PIN_MOSFET_Z2, LOW);
-    data.is_balancing_Z2 = false;
-  }
+
+
+  
+
 }
 
 

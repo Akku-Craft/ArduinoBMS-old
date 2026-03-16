@@ -162,10 +162,7 @@ void loop() {
   // alle 5 Sekunden wird eine Messung durchgefuehrt 
   if (curerentTimePacket - lastScanTime_packet >= time_interval_packet) {
     // bevor man andere Einheiten regestrieren und einlesen kann muss ma erst die erste Einheit hinzufuegen
-    read_Data_for_own_unit();
-
-    // hier muss die erste einheit regestriert werden
-    own_unit = read_Data_for_own_unit();
+    read_Data_for_own_unit(&own_unit);
 
     Units[0].voltage_mV = first_unit.voltage_mV;
     Units[0].voltage_Cell1 = first_unit.voltage_Cell1;
