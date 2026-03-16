@@ -145,5 +145,20 @@ void balancing(struct CellData own_cell) {
 
 }
 
+void Displayoutput() {
+  display.clearDisplay();      // 1. Altes Bild weg
+  
+  display.setTextSize(2);      // Textgröße (1 = klein, 2 = mittel)
+  display.setTextColor(WHITE); // Farbe (da OLED, gibt es nur an/aus)
+  display.setCursor(0, 10);    // Wo soll der Text starten? (X, Y)
+  
+  display.print("Akku: ");
+  display.print("Hallo\n"); // Dein Wert aus dem BMS
+  display.println("V");
+
+  display.display();           // 3. Alles auf den Bildschirm schieben
+  delay(2000);
+}
+
 
 #endif

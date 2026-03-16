@@ -14,6 +14,9 @@ CellData Units[MAX_UNITS];
 // hier werden die Pins zum Senden und Empfangen festgelegt
 SoftwareSerial mySerial(10, 11);
 
+// Das Objekt "display" erstellen
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
 // hier werden die Einheiten registriert und ausgelesen
 void register_and_check_units() {
   // wird gebraucht fuer das Senden
@@ -94,22 +97,41 @@ void check_for_erros() {
   for(int i = 0; i < MAX_UNITS; i++) {
     // Abfrage ob eine zugrosse Spannungsdifferenz vorliegt
     if (abs(Units[i].voltage_Cell1 - Units[0].voltage_Cell2) > diffStart) {
-      Units[i].error = voltage_difference;
+      digitalWrite(PinIN1, HIGH); // Relais zieht an (Klick!)
+      delay(2000);
+      digitalWrite(PinIN2, LOW);  // Relais fällt ab
+      delay(2000);
+      Displayoutput();
     }
 
     // hier wird abgefragt ob die Zellen zu sehr entladen sind
     if (Units[0].voltage_Cell1 < 2.00 || Units[0].voltage_Cell2 < 2.00) {
       Units[0].error = underloading;
+      digitalWrite(PinIN1, HIGH); // Relais zieht an (Klick!)
+      delay(2000);
+      digitalWrite(PinIN2, LOW);  // Relais fällt ab
+      delay(2000);
+      Displayoutput();
     }
 
     // hier wird abgefragt ob die Zellen zu voll sind
     if (Units[0].voltage_Cell1 < 4.00 || Units[0].voltage_Cell2 < 4.00) {
       Units[0].error = overloading;
+      digitalWrite(PinIN1, HIGH); // Relais zieht an (Klick!)
+      delay(2000);
+      digitalWrite(PinIN2, LOW);  // Relais fällt ab
+      delay(2000);
+      Displayoutput();
     }
 
     // hier wird auf ueberhitzung geprueft
     if (Units[0].voltage_Cell1 < 4.00 || Units[0].voltage_Cell2 < 4.00) {
       Units[0].error = overloading;
+      digitalWrite(PinIN1, HIGH); // Relais zieht an (Klick!)
+      delay(2000);
+      digitalWrite(PinIN2, LOW);  // Relais fällt ab
+      delay(2000);
+      Displayoutput();
     }
 
 
@@ -137,11 +159,20 @@ void setup() {
   pinMode(pinINC_2, OUTPUT);
   pinMode(pinUD_2, OUTPUT);
 
+  pinMode(PinIN1, OUTPUT);
+  pinMode(PinIN2, OUTPUT);
+
+  // Startet das Display. Wenn es nicht klappt, hält das Programm an.
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    for(;;); // Endlosschleife bei Fehler
+  }
+  
+  display.clearDisplay(); // Wichtig: Den Grafikspeicher einmal leeren
+
   while(!Serial); // warten bis der Monitor offen ist
   
   Serial.print("Initialisierung des BMS ...\n");
 
-  pinMode(PIN_MAIN_SWITCH, OUTPUT);
   pinMode(PIN_STATUS_LED, OUTPUT);
 
 

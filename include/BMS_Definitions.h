@@ -4,6 +4,14 @@
 
 #include <Arduino.h>
 
+// Konstanten und Variablen fuer das Display
+#define SCREEN_WIDTH 128 
+#define SCREEN_HEIGHT 64 
+
+// Pin Relays
+const int PinIN1 = 12;
+const int PinIN2 = 13;
+
 // Pin Temperatursensor
 const int tempPin = A0;
 
@@ -26,7 +34,7 @@ const int pinUD_2  = 5;  // Up / Down (Richtung)
 const int PIN_ZELLE1 = A1;
 const int PIN_GESAMT = A2;
 const int PIN_STATUS_LED = 13; // Onboard LED
-const int Stromsensor_pin = A3;
+const int Stromsensor_pin = A0;
 
 // Konstanten fuer die Berechnungen und das Balancing 
 const float V_REF = 5.0;         // Exakte Spannung am 5V Pin (bitte nachmessen!)
