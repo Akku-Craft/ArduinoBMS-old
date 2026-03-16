@@ -148,14 +148,19 @@ void setup() {
 }
 
 // Zeitsteuerung
-unsigned long lastScanTime = 0;
-const unsigned long scanInterval = 5000; // 5000ms = 5 Sekunden
+unsigned long lastScanTime_packet = 0;
+const unsigned long time_interval_packet = 5000; // 5000ms = 5 Sekunden
+
+unsigned long lastTimeBalancing = 0; // Speichert den Zeitpunkt der letzten Ausführung
+const unsigned long intervallBalancing = 60000; // 60.000 Millisekunden = 1 Minute
 
 // Die Hauptschleife läuft unendlich.
 void loop() {
+  unsigned long curerentTimePacket = millis();
+  unsigned long currentTimeBlancing = millis();
 
   // alle 5 Sekunden wird eine Messung durchgefuehrt 
-  if (currentTime - lastScanTime >= scanInterval) {
+  if (curerentTimePacket - lastScanTime_packet >= time_interval_packet) {
     // bevor man andere Einheiten regestrieren und einlesen kann muss ma erst die erste Einheit hinzufuegen
     read_Data_for_own_unit();
 
@@ -172,7 +177,14 @@ void loop() {
     register_and_check_units();
   }
 
-  balancing();
+
+  // Prüfen, ob die Differenz größer als das Intervall ist
+  if (currentTimeBlancing - lastTimeBalancing >= intervallBalancing) {
+    lastTimeBalancing = currentTimeBlancing; // Zeitstempel aktualisieren
+
+    balancing();
+  }
+  
 
   // Status-LED blinken lassen (ohne delay, damit Messung schnell bleibt)
   digitalWrite(PIN_STATUS_LED, !digitalRead(PIN_STATUS_LED));

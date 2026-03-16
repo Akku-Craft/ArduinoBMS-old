@@ -130,9 +130,20 @@ void setup() {
     SerialDown.begin(9600);
 }
 
+unsigned long lastTimeBalancing = 0; // Speichert den Zeitpunkt der letzten Ausführung
+const unsigned long intervallBalancing = 60000; // 60.000 Millisekunden = 1 Minute
+
 void loop() {
     recv_data_from_serialdown();
 
-    balancing();
+    unsigned long currentTimeBalancing = millis(); // Aktuelle Zeit abfragen
+
+    // Prüfen, ob die Differenz größer als das Intervall ist
+    if (currentTimeBalancing - lastTimeBalancing >= intervallBalancing) {
+        lastTimeBalancing = currentTimeBalancing; // Zeitstempel aktualisieren
+
+        balancing();
+    }
+    
 
 }

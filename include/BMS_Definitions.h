@@ -8,14 +8,14 @@
 const int tempPin = A0;
 
 // Pin Definitionen fuer Potensiometer 1
-const int pinCS_1  = 1; // Chip Select
-const int pinINC_1 = 2;  // Increment (Der "Takt")
-const int pinUD_1  = 3;  // Up / Down (Richtung)
+const int pinCS_1  = 3; // Chip Select
+const int pinINC_1 = 1;  // Increment (Der "Takt")
+const int pinUD_1  = 2;  // Up / Down (Richtung)
 
 // Pin Definitionen fuer Potensiometer 2
-const int pinCS_2  = 4; // Chip Select
-const int pinINC_2 = 5;  // Increment (Der "Takt")
-const int pinUD_2  = 6;  // Up / Down (Richtung)
+const int pinCS_2  = 6; // Chip Select
+const int pinINC_2 = 4;  // Increment (Der "Takt")
+const int pinUD_2  = 5;  // Up / Down (Richtung)
 
 #define NUM_CELLS_PER_UNIT 2
 #define MAX_UNITS          5
