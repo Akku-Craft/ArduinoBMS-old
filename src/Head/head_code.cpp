@@ -2,6 +2,7 @@
 #include "BMS_Definitions.h"
 #include "local_functions.cpp"
 #include <SoftwareSerial.h>
+#include <Wire.h>
 
 // Anzahl der aktuell verbundehnen Einheiten
 int currentUnitCount = 0;
